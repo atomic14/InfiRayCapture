@@ -1,6 +1,6 @@
 # IrProCapture
 
-[![Build](https://github.com/chrisgreening/IrProCapture/actions/workflows/build.yml/badge.svg)](https://github.com/chrisgreening/IrProCapture/actions/workflows/build.yml)
+[![Build](https://github.com/atomic14/InfiRayCapture/actions/workflows/build.yml/badge.svg)](https://github.com/atomic14/InfiRayCapture/actions/workflows/build.yml)
 
 A macOS application for viewing and capturing thermal imagery from the InfiRay P2Pro USB thermal camera.
 
