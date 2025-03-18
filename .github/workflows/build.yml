@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build and Test
-    runs-on: macos-14 # Uses macOS Sonoma
+    runs-on: macos-15 # Uses macOS Sonoma
 
     steps:
     - uses: actions/checkout@v4
