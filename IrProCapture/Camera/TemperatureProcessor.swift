@@ -1,4 +1,6 @@
 import Foundation
+import Accelerate
+
 
 struct TemperatureResult {
     let temperatures: [Float]
@@ -20,57 +22,47 @@ struct HistogramPoint: Identifiable {
 class TemperatureProcessor {
     private let width: Int = 256
     private let height: Int = 192
-    
-    @inline(__always)
-    func convertTemp<T: BinaryInteger>(raw: T) -> Float {
-        return Float(raw) / 64.0 - 273.2
-    }
-    
-    func computeHistogram(values: [Float], min: Float, max: Float, bins: Int) -> [HistogramPoint] {
-        var histogram = [Int](repeating: 0, count: bins)
         
-        // Ensure values are within the specified range
+    func computeHistogram(values: [Float], min: Float, max: Float, bins: Int) -> [HistogramPoint] {
         let range = max - min
-        let binWidth = range / Float(bins)
+        let binWidth = range / Float(bins - 1)
         if (binWidth == 0) {
             return []
         }
-
-        // Iterate through each value
-        for value in values {
-            // Skip values that are outside the given range
-            if value < min || value > max {
-                continue
-            }
-            
-            // Find the appropriate bin for the value
-            let binIndex = Int((value - min) / binWidth)
-            
-            // Make sure binIndex is within bounds
-            if binIndex >= 0 && binIndex < bins {
-                histogram[binIndex] += 1
-            }
-        }
-        
+        // work out which bin each value falls in
+        let binIndexes = vDSP.multiply(1/binWidth, vDSP.add(-min, values))
+        // accumulate the histogram
+        var histogram = [Int](repeating: 0, count: bins)
+        binIndexes.forEach { histogram[Int($0)] += 1 }
+        // results for charting
         return histogram.enumerated().map { (index, element) in
             HistogramPoint(x: Float(index) * binWidth + min, y: element)
         }
     }
     
-    func getTemperatures(from buffer: UnsafePointer<UInt16>, bytesPerRow: Int, startingAtRow: Int = 192) -> TemperatureResult {
-        var temperatures = [Float](repeating: 0, count: width * height)
-        var dstIndex = 0
+    func getTemperatures(from buffer: UnsafeMutablePointer<UInt16>, bytesPerRow: Int, startingAtRow: Int = 192) -> TemperatureResult {
         
-        // Process the temperature data
+        // Step 1 - get the bytes into the right order
+        var swappedValues = [UInt16](repeating: 0, count: width * height)
+        var dstIndex = 0
         for row in startingAtRow..<(startingAtRow + height) {
-            for column in 0..<width {
-                let index = row * bytesPerRow / MemoryLayout<UInt16>.size + column
-                let value = buffer[index].byteSwapped
-                temperatures[dstIndex] = convertTemp(raw: value)
+            var srcIndex = row * bytesPerRow / MemoryLayout<UInt16>.size
+            for _ in 0..<width {
+                let value = buffer[srcIndex].byteSwapped
+                swappedValues[dstIndex] = value
                 dstIndex += 1
+                srcIndex += 1
             }
         }
-        
+        // Step 2: Convert UInt16 to Float
+        var temperatures = [Float](repeating: 0, count: width * height)
+        vDSP_vfltu16(swappedValues, 1, &temperatures, 1, vDSP_Length(width*height))
+
+        // Step 3: Apply conversion: `(raw / 64.0) - 273.2`
+        let scale: Float = 1.0 / 64.0
+        let offset: Float = -273.2
+        temperatures = vDSP.add(offset, vDSP.multiply(scale, temperatures))
+
         // Calculate statistics
         let minValue = temperatures.min() ?? 0.0
         let maxElement = temperatures.enumerated().max(by: { $0.element < $1.element })
