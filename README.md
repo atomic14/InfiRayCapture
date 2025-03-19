@@ -4,6 +4,10 @@
 
 A macOS application for viewing and capturing thermal imagery from the InfiRay P2Pro USB thermal camera.
 
+If you find this project useful, please consider [buying me a coffee](https://ko-fi.com/atomic14) or become a supporter on [Patreon](https://www.patreon.com/atomic14).
+
+Alternatively, you can stop by my [YouTube channel](https://www.youtube.com/@atomic14) and watch a few videos.
+
 This was mainly to scratch my own itch. There is an official Windows application, and there are various Python applications - but I could not get these to work on the Mac.
 
 ![Demo](./images/demo.webp)
