@@ -12,7 +12,7 @@ This was mainly to scratch my own itch. There is an official Windows application
 
 ![Demo](./images/demo.webp)
 
-This application seems to work pretty well. It takes advantage of the fact that the InfiRay P2Pro acts as a USB Camera when plugged in. The actualy image is pretty weird. The top half seems to be some kind of grey scale image and the bottom half is the thermal image.
+This application seems to work pretty well. It takes advantage of the fact that the InfiRay P2Pro acts as a USB Camera when plugged in. The actual image is pretty weird. The top half seems to be some kind of grey scale image and the bottom half is the temperature data.
 
 
 ![USB Camera](./images/webcam-output.png)
