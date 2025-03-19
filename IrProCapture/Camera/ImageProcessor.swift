@@ -77,19 +77,13 @@ extension CIImage {
         var pixelData = [UInt8](repeating: 0, count: width * height * 4)
         let range = max(maxTemp - minTemp, 1.0)
         let scaledTemperatures = vDSP.multiply(255.0 / range, vDSP.add(-minTemp, temperatures))
-        var dstIndex = 0
         for index in 0..<width*height {
-            let temp = UInt8(scaledTemperatures[index])
-            pixelData[dstIndex] = temp
-            pixelData[dstIndex + 1] = temp
-            pixelData[dstIndex + 2] = temp
-            pixelData[dstIndex + 3] = 255
-            dstIndex += 4
+            pixelData[index] = UInt8(scaledTemperatures[index])
         }
-        let bytesPerRow = width * 4
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bytesPerRow = width
+        let colorSpace = CGColorSpaceCreateDeviceGray()
         let data = Data(bytes: pixelData, count: pixelData.count)
-        let greyScale = CIImage(bitmapData: data, bytesPerRow: bytesPerRow, size: CGSize(width: width, height: height), format: .RGBA8, colorSpace: colorSpace)
+        let greyScale = CIImage(bitmapData: data, bytesPerRow: bytesPerRow, size: CGSize(width: width, height: height), format: .L8, colorSpace: colorSpace)
         
         // Apply color map
         colorMap.filter.inputImage = greyScale
