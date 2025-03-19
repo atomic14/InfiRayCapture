@@ -9,7 +9,7 @@ import SwiftUI
 import Charts
 
 struct ContentView: View {
-    @EnvironmentObject var model: Model
+    @EnvironmentObject var model: Camera
     @State var isRunning = false
     @State private var alertMessage: String? = nil
     
@@ -24,6 +24,8 @@ struct ContentView: View {
                             .scaledToFit()      // Scale it to fit the container, maintaining aspect ratio
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                } else {
+                    Spacer()
                 }
             } else {
                 Spacer()
@@ -37,8 +39,8 @@ struct ContentView: View {
                         alertMessage = "Unknown error occurred"
                     }
                 }
-                Spacer()
             }
+            Spacer()
             VStack {
                 Text(String(format: "%.1f", model.maxTemperature))
                 Spacer()

@@ -9,7 +9,7 @@ import SwiftUI
 
 @main
 struct IrProCaptureApp: App {
-    @StateObject var model = Model()
+    @StateObject var model = Camera()
     
     var body: some Scene {
         Window("InfiRay Viewer", id: "main") {
@@ -32,13 +32,13 @@ struct IrProCaptureApp: App {
                 }
             }
             CommandMenu("Orientation") {
-                ForEach(rotationOptions, id: \.self) { colorMap in
+                ForEach(orientationOptions, id: \.self) { colorMap in
                     Button(action: {
-                        model.currentRotation = colorMap
+                        model.currentOrientation = colorMap
                     }) {
                         HStack {
                             Text(colorMap.name)
-                            if model.currentRotation == colorMap {
+                            if model.currentOrientation == colorMap {
                                 Image(systemName: "checkmark")
                                     .foregroundColor(.blue)
                             }

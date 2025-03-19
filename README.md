@@ -4,6 +4,17 @@
 
 A macOS application for viewing and capturing thermal imagery from the InfiRay P2Pro USB thermal camera.
 
+This was mainly to scratch my own itch. There is an official Windows application, and there are various Python applications - but I could not get these to work on the Mac.
+
+![Demo](./images/demo.webp)
+
+This application seems to work pretty well. It takes advantage of the fact that the InfiRay P2Pro acts as a USB Camera when plugged in. The actualy image is pretty weird. The top half seems to be some kind of grey scale image and the bottom half is the thermal image.
+
+
+![USB Camera](./images/webcam-output.png)
+
+I found a lot of useful information (in particular how to extract the temperature data) [here](https://github.com/LeoDJ/P2Pro-Viewer).
+
 ## Features
 
 - Real-time thermal camera feed display
@@ -18,7 +29,7 @@ A macOS application for viewing and capturing thermal imagery from the InfiRay P
 
 - macOS
 - InfiRay P2Pro USB thermal camera
-- Xcode 15.0 or later (for development)
+- Xcode
 
 ## Installation
 
@@ -36,25 +47,6 @@ A macOS application for viewing and capturing thermal imagery from the InfiRay P
    - Adjust camera orientation
    - Capture still images
    - Record video
-
-### Menu Commands
-
-- **Color Map**: Select different thermal visualization color schemes
-- **Orientation**: Adjust the camera orientation (disabled during recording)
-- **Capture**:
-  - Save Image: Capture a single thermal image
-  - Record: Start video recording
-  - Stop Recording: End video recording
-
-## Development
-
-The project is built using SwiftUI and follows modern macOS development practices. Key components include:
-
-- `IrProCaptureApp.swift`: Main application entry point and menu configuration
-- `ContentView.swift`: Primary user interface
-- `Environment.swift`: Core camera and image processing logic
-- `ColorMaps.swift`: Thermal visualization color schemes
-- `Rotations.swift`: Camera orientation options
 
 ## License
 
