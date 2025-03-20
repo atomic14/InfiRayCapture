@@ -8,7 +8,7 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreGraphics
 
-
+/// Predefined color mapping for the 'Jet' colormap style
 let jetColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.5),  // Dark Blue
     (0.0, 0.0, 1.0),  // Blue
@@ -20,6 +20,7 @@ let jetColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.0, 0.0)   // Red
 ]
 
+/// Predefined color mapping for the 'Inferno' colormap style
 let infernoColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.13),  // Dark Purple
     (0.23, 0.0, 0.38),  // Deep Red
@@ -28,6 +29,7 @@ let infernoColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.99, 0.0)     // Bright Yellow
 ]
 
+/// Predefined color mapping for the 'Viridis' colormap style
 let viridisColormap: [(r: Float, g: Float, b: Float)] = [
     (0.13, 0.13, 0.38),  // Dark Purple
     (0.24, 0.29, 0.56),  // Deep Blue
@@ -36,6 +38,7 @@ let viridisColormap: [(r: Float, g: Float, b: Float)] = [
     (0.88, 0.98, 0.26)   // Bright Yellow
 ]
 
+/// Predefined color mapping for the 'Plasma' colormap style
 let plasmaColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.13),  // Dark Purple
     (0.26, 0.02, 0.42),  // Deep Pink
@@ -44,6 +47,7 @@ let plasmaColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.99, 0.0)    // Bright Yellow
 ]
 
+/// Predefined color mapping for the 'Coolwarm' colormap style
 let coolwarmColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.5),    // Dark Blue
     (0.0, 0.0, 1.0),    // Blue
@@ -52,6 +56,7 @@ let coolwarmColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.0, 0.0)     // Red
 ]
 
+/// Predefined color mapping for the 'Magma' colormap style
 let magmaColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.13),  // Dark Purple
     (0.25, 0.0, 0.27),  // Purple
@@ -60,6 +65,7 @@ let magmaColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.91, 0.0)    // Light Yellow
 ]
 
+/// Predefined color mapping for the 'Twilight' colormap style
 let twilightColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 0.5),   // Dark Blue
     (0.0, 0.0, 1.0),   // Blue
@@ -68,35 +74,54 @@ let twilightColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 1.0, 0.0)    // Yellow
 ]
 
+/// Predefined color mapping for the 'Autumn' colormap style
 let autumnColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 1.0, 0.0),   // Yellow
     (1.0, 0.5, 0.0),   // Orange
     (1.0, 0.0, 0.0)    // Red
 ]
 
+/// Predefined color mapping for the 'Spring' colormap style
 let springColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.0, 1.0),   // Magenta
     (1.0, 1.0, 0.0)    // Yellow
 ]
 
+/// Predefined color mapping for the 'Winter' colormap style
 let winterColormap: [(r: Float, g: Float, b: Float)] = [
     (0.0, 0.0, 1.0),   // Blue
     (0.0, 1.0, 0.0)    // Green
 ]
 
+/// A class that defines a color mapping for thermal image visualization.
+///
+/// ColorMap provides functionality to:
+/// - Define a named set of colors for thermal visualization
+/// - Convert grayscale thermal data to color using Core Image filters
+/// - Support comparison and hashing for collection storage
 class ColorMap: Hashable, Equatable {
+    /// Compares two ColorMap instances for equality based on their names.
     static func == (lhs: ColorMap, rhs: ColorMap) -> Bool {
         return lhs.name == rhs.name
     }
     
+    /// Generates a hash value for the ColorMap based on its name.
     func hash(into hasher: inout Hasher) {
         name.hash(into: &hasher)
     }
     
+    /// The name of the color map (e.g., "Viridis", "Plasma")
     let name: String
+    /// The array of RGB color values defining the color mapping
     let colors: [(r: Float, g: Float, b: Float)]
+    /// The Core Image filter used to apply the color mapping
     let filter: CIColorCurves
     
+    /// Creates a new ColorMap instance.
+    ///
+    /// - Parameters:
+    ///   - name: The name of the color map
+    ///   - colors: An array of RGB color values defining the mapping
     init(name: String, colors: [(r: Float, g: Float, b: Float)]) {
         self.name = name
         self.colors = colors
@@ -114,6 +139,7 @@ class ColorMap: Hashable, Equatable {
     }
 }
 
+/// The collection of available color maps for thermal visualization
 let colorMaps = [
     ColorMap(name: "Viridis", colors: viridisColormap),
     ColorMap(name: "Plasma", colors: plasmaColormap),

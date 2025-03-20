@@ -3,12 +3,36 @@ import AVFoundation
 import CoreImage
 import CoreGraphics
 
+/// A class that handles video recording functionality for thermal camera output.
+///
+/// VideoRecorder manages the process of:
+/// - Creating and configuring video recording sessions
+/// - Converting and writing individual frames to video
+/// - Managing video recording state and resources
+/// - Handling video file output
 class VideoRecorder {
+    /// The AVAssetWriter instance responsible for writing video data to disk
     private var assetWriter: AVAssetWriter?
+    /// The input interface for writing video frames
     private var videoInput: AVAssetWriterInput?
+    /// Adapter for converting CGImage frames to the video pixel format
     private var pixelBufferAdaptor: AVAssetWriterInputPixelBufferAdaptor?
+    /// Timestamp of the last recorded frame for timing calculations
     private var lastFrameTime: Double = 0.0
     
+    /// Starts a new video recording session.
+    ///
+    /// This method:
+    /// 1. Creates a new video file at the specified location
+    /// 2. Configures video encoding settings (H.264, bitrate, etc.)
+    /// 3. Sets up the necessary AVFoundation components
+    /// 4. Begins the recording session
+    ///
+    /// - Parameters:
+    ///   - outputURL: The file URL where the video will be saved
+    ///   - width: The width of the video in pixels
+    ///   - height: The height of the video in pixels
+    /// - Returns: Boolean indicating whether recording started successfully
     func startRecording(outputURL: URL, width: CGFloat, height: CGFloat) -> Bool {
         print("Start recording video to \(outputURL.path)")
         print("Recording size is \(width) x \(height)")
@@ -80,6 +104,15 @@ class VideoRecorder {
         return true
     }
     
+    /// Records a single frame to the video file.
+    ///
+    /// This method handles:
+    /// 1. Converting the CGImage to the appropriate pixel buffer format
+    /// 2. Timing calculations for frame presentation
+    /// 3. Writing the frame to the video file
+    ///
+    /// - Parameter image: The CGImage frame to record
+    /// - Returns: Boolean indicating whether the frame was recorded successfully
     func recordFrame(_ image: CGImage) -> Bool {
         guard let videoInput = videoInput else {
             print("videoInput is nil!")
@@ -143,6 +176,15 @@ class VideoRecorder {
         return true
     }
     
+    /// Stops the current recording session and finalizes the video file.
+    ///
+    /// This method:
+    /// 1. Marks the recording as finished
+    /// 2. Finalizes the video file
+    /// 3. Cleans up recording resources
+    /// 4. Calls the completion handler when finished
+    ///
+    /// - Parameter completion: Closure to be called when recording has finished
     func stopRecording(completion: @escaping () -> Void) {
         print("Stopping recording...")
         guard let videoInput = videoInput else {

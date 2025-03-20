@@ -12,40 +12,63 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import CoreGraphics
 
-enum IrProError: String, Error {
-    case noDevicesFound = "No IR camera devices found."
-    case failedToCreateDeviceInput = "Failed to create device input."
-    case failedToAddToSession = "Could not add to capture session."
-    case failedToAddOutput = "Failed to set video output."
-}
-
-class Camera: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
-    // Published properties for UI updates
+/// A camera controller class that manages thermal imaging capture, processing, and recording.
+/// 
+/// The `Camera` class serves as the main controller for thermal imaging operations, handling:
+/// - Real-time thermal image capture and processing
+/// - Temperature data analysis and visualization
+/// - Image and video recording capabilities
+/// - Color map and orientation management
+///
+/// This class implements the `ObservableObject` protocol for SwiftUI integration and
+/// `CaptureDelegate` for handling camera capture events.
+class Camera: NSObject, ObservableObject, CaptureDelegate {
+    // MARK: - Published Properties
+    
+    /// The processed thermal image ready for display
     @Published var resultImage: CGImage? = nil
+    
+    /// The minimum temperature detected in the current frame
     @Published var minTemperature: Float = 0
+    
+    /// The maximum temperature detected in the current frame
     @Published var maxTemperature: Float = 0
+    
+    /// The temperature at the center of the frame
     @Published var centerTemperature: Float = 0.0
+    
+    /// The average temperature across the entire frame
     @Published var averageTemperature: Float = 0
+    
+    /// The currently selected color map for thermal visualization
     @Published var currentColorMap: ColorMap {
         didSet {
             UserDefaults.standard.set(colorMaps.firstIndex(of: currentColorMap)!, forKey: "currentColorMap")
         }
     }
+    
+    /// The current orientation setting for the thermal image
     @Published var currentOrientation: OrientationOption {
         didSet {
             UserDefaults.standard.set(orientationOptions.firstIndex(of: currentOrientation)!, forKey: "currentRotation")
         }
     }
+    
+    /// Indicates whether the camera is currently running
     @Published var isRunning = false
+    
+    /// Indicates whether video recording is in progress
     @Published var isRecording = false
+    
+    /// Temperature distribution data for histogram visualization
     @Published var histogram: [HistogramPoint] = []
     
     // Private components
     private let ciContext = CIContext()
-    private let captureSession = AVCaptureSession()
     private let temperatureProcessor = TemperatureProcessor()
     private let videoRecorder = VideoRecorder()
     private var isProcessing = false
+    private var capture: Capture?
     
     override init() {
         // Initialise any user defaults
@@ -66,51 +89,30 @@ class Camera: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDe
         super.init()
     }
     
+    /// Starts the thermal camera capture session.
+    /// 
+    /// - Returns: A boolean indicating whether the camera started successfully.
+    /// - Throws: Camera initialization or permission errors.
     func start() throws -> Bool {
         if isRunning {
             return true
         }
         
-        // Find our USB Camera device
-        let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified)
-        let devices = discoverySession.devices
-        guard let videoCaptureDevice = devices.filter({ $0.localizedName.contains("USB Camera") }).first else {
-            throw IrProError.noDevicesFound
-        }
-        
-        // Set up the session
-        guard let videoInput = try? AVCaptureDeviceInput(device: videoCaptureDevice) else {
-            throw IrProError.failedToCreateDeviceInput
-        }
-        
-        if (captureSession.canAddInput(videoInput)) {
-            captureSession.addInput(videoInput)
-        } else {
-            throw IrProError.failedToAddToSession
-        }
-        
-        let videoDataOutput = AVCaptureVideoDataOutput()
-        if captureSession.canAddOutput(videoDataOutput) {
-            captureSession.addOutput(videoDataOutput)
-            videoDataOutput.setSampleBufferDelegate(self, queue: .main)
-            videoDataOutput.alwaysDiscardsLateVideoFrames = true
-        } else {
-            throw IrProError.failedToAddOutput
-        }
-        
-        captureSession.startRunning()
-        isRunning = true
-        print("Camera started!")
-        return true
+        capture = Capture(delegate: self)
+        isRunning = try capture?.start() ?? false
+        return isRunning
     }
     
+    /// Stops the thermal camera capture session.
     func stop() {
-        if isRunning {
-            captureSession.stopRunning()
-            isRunning = false
-        }
+        capture?.stop()
+        isRunning = false
     }
     
+    /// Saves the current thermal image to disk as a PNG file.
+    /// 
+    /// - Parameter outputURL: The URL where the image should be saved.
+    /// - Returns: A boolean indicating whether the save operation was successful.
     func saveImage(outputURL: URL) -> Bool {
         guard let resultImage = resultImage else {
             print("No image to save")
@@ -141,12 +143,17 @@ class Camera: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDe
         }
     }
     
+    /// Begins recording thermal video to disk.
+    /// 
+    /// - Parameter outputURL: The URL where the video should be saved.
+    /// - Returns: A boolean indicating whether recording started successfully.
     func startRecording(outputURL: URL) -> Bool {
         let (width, height) = currentOrientation.translateX(CGFloat(WIDTH), y: CGFloat(HEIGHT))
         isRecording = videoRecorder.startRecording(outputURL: outputURL, width: width, height: height)
         return isRecording
     }
     
+    /// Stops the current video recording session.
     func stopRecording() {
         isRecording = false
         videoRecorder.stopRecording {
@@ -154,7 +161,20 @@ class Camera: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDe
         }
     }
     
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    // MARK: - CaptureDelegate
+    
+    /// Processes new frames from the thermal camera.
+    /// 
+    /// This method handles:
+    /// - Temperature data extraction
+    /// - Image processing and colorization
+    /// - Video recording
+    /// - UI updates
+    /// 
+    /// - Parameters:
+    ///   - capture: The capture instance that produced the frame
+    ///   - sampleBuffer: The raw frame data buffer
+    func capture(_ capture: Capture, didOutput sampleBuffer: CMSampleBuffer) {
         if isProcessing {
             return
         }
