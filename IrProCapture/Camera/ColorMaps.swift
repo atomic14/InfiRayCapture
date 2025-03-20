@@ -29,6 +29,79 @@ let infernoColormap: [(r: Float, g: Float, b: Float)] = [
     (1.0, 0.99, 0.0)     // Bright Yellow
 ]
 
+/// Predefined color mapping for the 'Turbo' colormap style
+let turboColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.18995, 0.07176, 0.23217),  // Dark Purple
+    (0.19483, 0.28877, 0.75087),  // Deep Blue
+    (0.19956, 0.54642, 0.91919),  // Light Blue
+    (0.23421, 0.74619, 0.65797),  // Cyan
+    (0.49974, 0.91176, 0.23218),  // Green
+    (0.83976, 0.84151, 0.11136),  // Yellow
+    (0.98072, 0.55989, 0.14996),  // Orange
+    (0.90240, 0.19865, 0.16086)   // Red
+]
+
+/// Predefined color mapping for the 'Hot' colormap style
+let hotColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.0, 0.0, 0.0),    // Black
+    (0.5, 0.0, 0.0),    // Dark Red
+    (1.0, 0.0, 0.0),    // Red
+    (1.0, 0.5, 0.0),    // Orange
+    (1.0, 1.0, 0.0),    // Yellow
+    (1.0, 1.0, 1.0)     // White
+]
+
+/// Predefined color mapping for the 'Rainbow' colormap style
+let rainbowColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.5, 0.0, 1.0),    // Violet
+    (0.0, 0.0, 1.0),    // Blue
+    (0.0, 1.0, 1.0),    // Cyan
+    (0.0, 1.0, 0.0),    // Green
+    (1.0, 1.0, 0.0),    // Yellow
+    (1.0, 0.0, 0.0)     // Red
+]
+
+/// Predefined color mapping for the 'Parula' colormap style
+let parulaColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.2081, 0.1663, 0.5292),  // Dark Blue
+    (0.1986, 0.3743, 0.6029),  // Blue
+    (0.1258, 0.5686, 0.6399),  // Cyan
+    (0.0343, 0.7244, 0.5914),  // Teal
+    (0.3231, 0.8526, 0.4182),  // Green
+    (0.7153, 0.9333, 0.1631),  // Yellow
+    (0.9932, 0.9062, 0.1439)   // Light Yellow
+]
+
+/// Predefined color mapping for the 'HSV' colormap style
+let hsvColormap: [(r: Float, g: Float, b: Float)] = [
+    (1.0, 0.0, 0.0),    // Red
+    (1.0, 1.0, 0.0),    // Yellow
+    (0.0, 1.0, 0.0),    // Green
+    (0.0, 1.0, 1.0),    // Cyan
+    (0.0, 0.0, 1.0),    // Blue
+    (1.0, 0.0, 1.0)     // Magenta
+]
+
+/// Predefined color mapping for the 'Cubehelix' colormap style
+let cubehelixColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.0, 0.0, 0.0),      // Black
+    (0.2196, 0.1039, 0.3637),  // Dark Purple
+    (0.3637, 0.3700, 0.5847),  // Purple Blue
+    (0.4769, 0.6008, 0.6823),  // Light Blue
+    (0.6456, 0.7474, 0.6137),  // Green-Yellow
+    (0.8645, 0.7240, 0.5780),  // Light Orange
+    (1.0, 1.0, 1.0)       // White
+]
+
+/// Predefined color mapping for the 'Cividis' colormap style
+let cividisColormap: [(r: Float, g: Float, b: Float)] = [
+    (0.0, 0.1259, 0.3022),  // Dark Blue
+    (0.1330, 0.3174, 0.4951),  // Medium Blue
+    (0.3553, 0.5185, 0.5930),  // Blue-Green
+    (0.6866, 0.7863, 0.5775),  // Light Yellow-Green
+    (0.9983, 0.9983, 0.6633)   // Light Yellow
+]
+
 /// Predefined color mapping for the 'Viridis' colormap style
 let viridisColormap: [(r: Float, g: Float, b: Float)] = [
     (0.13, 0.13, 0.38),  // Dark Purple
@@ -141,6 +214,12 @@ class ColorMap: Hashable, Equatable {
 
 /// The collection of available color maps for thermal visualization
 let colorMaps = [
+    ColorMap(name: "Jet", colors: jetColormap),
+    ColorMap(name: "Inferno", colors: infernoColormap),
+    ColorMap(name: "Turbo", colors: turboColormap),
+    ColorMap(name: "Hot", colors: hotColormap),
+    ColorMap(name: "Rainbow", colors: rainbowColormap),
+    ColorMap(name: "Parula", colors: parulaColormap),
     ColorMap(name: "Viridis", colors: viridisColormap),
     ColorMap(name: "Plasma", colors: plasmaColormap),
     ColorMap(name: "Coolwarm", colors: coolwarmColormap),
@@ -149,4 +228,7 @@ let colorMaps = [
     ColorMap(name: "Autumn", colors: autumnColormap),
     ColorMap(name: "Spring", colors: springColormap),
     ColorMap(name: "Winter", colors: winterColormap),
+    ColorMap(name: "HSV", colors: hsvColormap),
+    ColorMap(name: "Cubehelix", colors: cubehelixColormap),
+    ColorMap(name: "Cividis", colors: cividisColormap),
 ]
