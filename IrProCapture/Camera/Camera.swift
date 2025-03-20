@@ -65,7 +65,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     
     // Private components
     private let ciContext = CIContext()
-    private let temperatureProcessor = TemperatureProcessor()
+    private let temperatureProcessor = TemperatureProcessor(averagingEnabled: true, maxFrameCount: 2)
     private let videoRecorder = VideoRecorder()
     private var isProcessing = false
     private var capture: Capture?

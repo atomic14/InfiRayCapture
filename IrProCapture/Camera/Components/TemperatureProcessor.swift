@@ -49,6 +49,47 @@ class TemperatureProcessor {
     /// Height of the thermal sensor in pixels
     private let height: Int = 192
     
+    /// Buffer storing recent frames for averaging
+    private var frameBuffer: [[Float]] = []
+    /// Maximum number of frames to average
+    private var maxFrameCount: Int = 5
+    /// Whether frame averaging is enabled
+    private var averagingEnabled: Bool = false
+    
+    /// Initializes a new TemperatureProcessor.
+    ///
+    /// - Parameters:
+    ///   - averagingEnabled: Whether frame averaging is enabled (default: false)
+    ///   - maxFrameCount: Maximum number of frames to keep for averaging (default: 5)
+    init(averagingEnabled: Bool = false, maxFrameCount: Int = 5) {
+        self.averagingEnabled = averagingEnabled
+        self.maxFrameCount = max(1, maxFrameCount)
+    }
+    
+    /// Enables or disables frame averaging.
+    ///
+    /// - Parameter enabled: Whether averaging should be enabled
+    func setAveragingEnabled(_ enabled: Bool) {
+        if averagingEnabled != enabled {
+            frameBuffer.removeAll()
+            averagingEnabled = enabled
+        }
+    }
+    
+    /// Sets the number of frames to use for averaging.
+    ///
+    /// - Parameter count: Number of frames to average (minimum 1)
+    func setFrameCount(_ count: Int) {
+        let newCount = max(1, count)
+        if maxFrameCount != newCount {
+            maxFrameCount = newCount
+            // Trim buffer if needed
+            while frameBuffer.count > maxFrameCount {
+                frameBuffer.removeFirst()
+            }
+        }
+    }
+    
     /// Computes a histogram of temperature values.
     ///
     /// - Parameters:
@@ -81,6 +122,7 @@ class TemperatureProcessor {
     /// 2. Converts UInt16 values to floating-point temperatures
     /// 3. Applies calibration formula to get actual temperatures
     /// 4. Computes various statistics and histogram data
+    /// 5. If enabled, averages with previous frames to reduce noise
     ///
     /// - Parameters:
     ///   - buffer: Raw camera data buffer
@@ -109,6 +151,34 @@ class TemperatureProcessor {
         let scale: Float = 1.0 / 64.0
         let offset: Float = -273.2
         temperatures = vDSP.add(offset, vDSP.multiply(scale, temperatures))
+        
+        // Step 4: Apply frame averaging if enabled
+        if averagingEnabled {
+            // Add current frame to buffer
+            frameBuffer.append(temperatures)
+            
+            // Keep buffer at correct size
+            while frameBuffer.count > maxFrameCount {
+                frameBuffer.removeFirst()
+            }
+
+            // Average frames if we have more than one
+            if frameBuffer.count > 1 {
+                var averagedTemperatures = [Float](repeating: 0, count: width * height)
+                
+                // Sum all frames
+                for frame in frameBuffer {
+                    vDSP.add(averagedTemperatures, frame, result: &averagedTemperatures)
+                }
+                
+                // Divide by frame count
+                let scale = 1.0 / Float(frameBuffer.count)
+                vDSP.multiply(scale, averagedTemperatures, result: &averagedTemperatures)
+                
+                // Use averaged temperatures for statistics
+                temperatures = averagedTemperatures
+            }
+        }
 
         // Calculate statistics
         let minValue = temperatures.min() ?? 0.0
