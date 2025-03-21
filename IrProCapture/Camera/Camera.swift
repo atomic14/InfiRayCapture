@@ -63,6 +63,9 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     /// Temperature distribution data for histogram visualization
     @Published var histogram: [HistogramPoint] = []
     
+    /// Historical temperature data for trend visualization (last 60 seconds)
+    @Published var temperatureHistory: [TemperatureHistoryPoint] = []
+    
     // Private components
     private let ciContext = CIContext()
     private let temperatureProcessor = TemperatureProcessor(averagingEnabled: true, maxFrameCount: 2)
@@ -118,7 +121,6 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
         if isRunning {
             return true
         }
-        
         capture = Capture(delegate: self)
         isRunning = try capture?.start() ?? false
         return isRunning
@@ -240,6 +242,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
             self.maxTemperature = tempResult.max
             self.averageTemperature = tempResult.average
             self.centerTemperature = tempResult.center
+            self.temperatureHistory = tempResult.temperatureHistory
             self.isProcessing = false
         }
     }

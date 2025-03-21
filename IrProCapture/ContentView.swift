@@ -36,6 +36,14 @@ struct ContentView: View {
                     maxTemperature: model.maxTemperature
                 )
             }.padding()
+            
+            // History chart at the bottom
+            TemperatureHistoryChart(
+                history: model.temperatureHistory,
+                minTemperature: model.temperatureHistory.isEmpty ? model.minTemperature : model.temperatureHistory.map { $0.min }.min() ?? model.minTemperature,
+                maxTemperature: model.temperatureHistory.isEmpty ? model.maxTemperature : model.temperatureHistory.map { $0.max }.max() ?? model.maxTemperature
+            )
+            .padding(.bottom)
         }
         .onAppear {
         }

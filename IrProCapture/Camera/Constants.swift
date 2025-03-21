@@ -10,4 +10,4 @@ let WIDTH: Float = 256.0 * SCALE
 
 /// Height of the scaled thermal image in pixels.
 /// Calculated as the raw sensor height (192) multiplied by the scale factor.
-let HEIGHT: Float = 192.0 * SCALE 
+let HEIGHT: Float = 192.0 * SCALE

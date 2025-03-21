@@ -1,6 +1,24 @@
 import Foundation
 import Accelerate
 
+
+/// A data point for historical temperature tracking
+struct TemperatureHistoryPoint: Identifiable {
+    /// Unique identifier for the point
+    var id: Date { timestamp }
+    /// Timestamp when the reading was taken
+    let timestamp: Date
+    /// Minimum temperature in this reading
+    let min: Float
+    /// Maximum temperature in this reading
+    let max: Float
+    /// Average temperature in this reading
+    let average: Float
+    /// Temperature at center point in this reading
+    let center: Float
+}
+
+
 /// A structure containing processed temperature data and related statistics.
 ///
 /// This structure encapsulates all the temperature-related information extracted
@@ -23,8 +41,9 @@ struct TemperatureResult {
     let center: Float
     /// Temperature distribution data for histogram visualization
     let histogram: [HistogramPoint]
+    /// Temperature history
+    let temperatureHistory: [TemperatureHistoryPoint]
 }
-
 /// A single point in the temperature histogram.
 ///
 /// Used for visualizing temperature distribution across the thermal image.
@@ -55,7 +74,11 @@ class TemperatureProcessor {
     private var maxFrameCount: Int = 5
     /// Whether frame averaging is enabled
     private var averagingEnabled: Bool = false
-    
+    // Temperature history tracking
+    private var temperatureHistory: [TemperatureHistoryPoint] = []
+    private let historyUpdateInterval: TimeInterval = 0.1 // Update every second
+    private let maxHistoryTime = 60.0 // Keep 1 minute of history
+
     /// Initializes a new TemperatureProcessor.
     ///
     /// - Parameters:
@@ -114,6 +137,35 @@ class TemperatureProcessor {
             HistogramPoint(x: Float(index) * binWidth + min, y: element)
         }
     }
+    
+    /// Records current temperature values to the history.
+    /// Only adds a point if enough time has passed since the last update.
+    private func updateTemperatureHistory(minTemperature: Float, maxTemperature: Float, averageTemperature: Float, centerTemperature: Float) {
+        let now = Date()
+        
+        // Only update approximately once per second
+        if temperatureHistory.isEmpty || now.timeIntervalSince(temperatureHistory.last!.timestamp) >= historyUpdateInterval {
+            // Create a new history point with current values and timestamp
+            let historyPoint = TemperatureHistoryPoint(
+                timestamp: now,
+                min: minTemperature,
+                max: maxTemperature,
+                average: averageTemperature,
+                center: centerTemperature
+            )
+            
+            // Add to history
+            temperatureHistory.append(historyPoint)
+            
+            // Trim history if it exceeds the maximum time
+            while temperatureHistory.count >= 2 &&
+                  (temperatureHistory.last?.timestamp.timeIntervalSince1970 ?? 0) -
+                  (temperatureHistory.first?.timestamp.timeIntervalSince1970 ?? 0) > maxHistoryTime {
+                temperatureHistory.removeFirst()
+            }
+        }
+    }
+
     
     /// Processes raw thermal camera data into temperature values and statistics.
     ///
@@ -193,6 +245,10 @@ class TemperatureProcessor {
 
         // Compute histogram
         let histogram = computeHistogram(values: temperatures, min: minValue, max: maxValue, bins: 50)
+        // update history
+        if (minValue > -20) {
+            updateTemperatureHistory(minTemperature: minValue, maxTemperature: maxValue, averageTemperature: average, centerTemperature: centerTemp)
+        }
         
         return TemperatureResult(
             temperatures: temperatures,
@@ -202,7 +258,8 @@ class TemperatureProcessor {
             maxY: maxY,
             average: average,
             center: centerTemp,
-            histogram: histogram
+            histogram: histogram,
+            temperatureHistory: temperatureHistory
         )
     }
 } 
