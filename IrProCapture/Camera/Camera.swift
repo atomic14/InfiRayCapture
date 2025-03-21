@@ -67,6 +67,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     private let ciContext = CIContext()
     private let temperatureProcessor = TemperatureProcessor(averagingEnabled: true, maxFrameCount: 2)
     private let videoRecorder = VideoRecorder()
+    private let imageCapturer = ImageCapturer()
     private var isProcessing = false
     private var capture: Capture?
     
@@ -87,6 +88,26 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
             UserDefaults.standard.set(7, forKey: "currentOrientation")
         }
         super.init()
+    }
+    
+    /// Cycles to the next orientation option
+    func nextOrientation() {
+        guard !isRecording else { return }
+        
+        if let currentIndex = orientationOptions.firstIndex(of: currentOrientation) {
+            let nextIndex = (currentIndex + 1) % orientationOptions.count
+            currentOrientation = orientationOptions[nextIndex]
+        }
+    }
+    
+    /// Cycles to the previous orientation option
+    func previousOrientation() {
+        guard !isRecording else { return }
+        
+        if let currentIndex = orientationOptions.firstIndex(of: currentOrientation) {
+            let previousIndex = (currentIndex - 1 + orientationOptions.count) % orientationOptions.count
+            currentOrientation = orientationOptions[previousIndex]
+        }
     }
     
     /// Starts the thermal camera capture session.
@@ -119,28 +140,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
             return false
         }
         
-        // If the file already exists we need to delete it
-        if FileManager.default.fileExists(atPath: outputURL.path) {
-            try? FileManager.default.removeItem(at: outputURL)
-        }
-        
-        // Create an image destination for PNG format
-        guard let destination = CGImageDestinationCreateWithURL(outputURL as CFURL, UTType.png.identifier as CFString, 1, nil) else {
-            print("Failed to create image destination")
-            return false
-        }
-        
-        // Add the CGImage to the destination
-        CGImageDestinationAddImage(destination, resultImage, nil)
-        
-        // Finalize the image writing
-        if CGImageDestinationFinalize(destination) {
-            print("Image saved successfully!")
-            return true
-        } else {
-            print("Failed to save image")
-            return false
-        }
+        return imageCapturer.saveImage(image: resultImage, outputURL: outputURL)
     }
     
     /// Begins recording thermal video to disk.
