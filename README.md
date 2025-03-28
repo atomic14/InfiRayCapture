@@ -10,7 +10,7 @@ Alternatively, you can stop by my [YouTube channel](https://www.youtube.com/@ato
 
 This was mainly to scratch my own itch. There is an official Windows application, and there are various Python applications - but I could not get these to work on the Mac.
 
-![Demo](./images/demo.webp)
+![Demo](./images/demo.png)
 
 This application seems to work pretty well. It takes advantage of the fact that the InfiRay P2Pro acts as a USB Camera when plugged in. The actual image is pretty weird. The top half seems to be some kind of grey scale image and the bottom half is the temperature data.
 
