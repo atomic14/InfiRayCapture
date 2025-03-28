@@ -47,6 +47,41 @@ struct IrProCaptureApp: App {
                     .disabled(model.isRecording)
                 }
             }
+            CommandMenu("Temperature Grid") {
+                Toggle("Show Grid", isOn: $model.showTemperatureGrid)
+                
+                Menu("Grid Density") {
+                    ForEach(GridDensity.allCases) { density in
+                        Button(action: {
+                            model.temperatureGridDensity = density
+                        }) {
+                            HStack {
+                                Text(density.rawValue)
+                                if model.temperatureGridDensity == density {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Menu("Temperature Format") {
+                    ForEach(TemperatureFormat.allCases) { format in
+                        Button(action: {
+                            model.temperatureFormat = format
+                        }) {
+                            HStack {
+                                Text(format.rawValue)
+                                if model.temperatureFormat == format {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             CommandMenu("Capture") {
                 Button(action: {
                     let panel = NSSavePanel()

@@ -43,6 +43,10 @@ struct TemperatureResult {
     let histogram: [HistogramPoint]
     /// Temperature history
     let temperatureHistory: [TemperatureHistoryPoint]
+    /// Width of the temperature data in pixels
+    let width: Int
+    /// Height of the temperature data in pixels
+    let height: Int
 }
 /// A single point in the temperature histogram.
 ///
@@ -259,7 +263,9 @@ class TemperatureProcessor {
             average: average,
             center: centerTemp,
             histogram: histogram,
-            temperatureHistory: temperatureHistory
+            temperatureHistory: temperatureHistory,
+            width: width,
+            height: height
         )
     }
 } 

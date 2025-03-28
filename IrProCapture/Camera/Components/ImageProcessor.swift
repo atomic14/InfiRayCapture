@@ -6,95 +6,6 @@ import Accelerate
 
 /// Extension to CIImage providing thermal image processing capabilities.
 extension CIImage {
-    /// Determines the correct text orientation based on the image orientation.
-    ///
-    /// This method handles various image rotation cases to ensure text overlays
-    /// are correctly oriented relative to the image orientation.
-    ///
-    /// - Parameter imageOrientation: The orientation of the base image
-    /// - Returns: The adjusted orientation for text overlays
-    func getTextOrientation(_ imageOrientation: CGImagePropertyOrientation) -> CGImagePropertyOrientation {
-        // Handle rotation
-        switch(imageOrientation) {
-        case .left:
-            return .right
-        case .right:
-            return .left
-        case .leftMirrored:
-            return .right
-        case .rightMirrored:
-            return .left
-        default:
-            return imageOrientation
-        }
-    }
-    
-    /// Overlays a temperature reading on the image at a specified position.
-    ///
-    /// This method creates a temperature overlay with:
-    /// - Temperature value with degree symbol
-    /// - Dark background for better visibility
-    /// - Gaussian blur for smooth background
-    /// - Proper positioning and orientation
-    ///
-    /// - Parameters:
-    ///   - temperature: The temperature value to display
-    ///   - xPos: Normalized X position (0-1) for the overlay
-    ///   - yPos: Normalized Y position (0-1) for the overlay
-    ///   - orientation: The desired orientation of the text
-    ///   - color: The color of the temperature text (default: white)
-    /// - Returns: A new CIImage with the temperature overlay, or nil if the operation fails
-    func overlayTemperature(temperature: Float, xPos: CGFloat, yPos: CGFloat, orientation: CGImagePropertyOrientation, color: NSColor = .white) -> CIImage? {
-        // Create text filter for the actual text
-        let textFilter = CIFilter.attributedTextImageGenerator()
-        let attributedText = NSAttributedString(
-            string: String(format: "%.1f°C", temperature),
-            attributes: [.foregroundColor: color]
-        )
-        textFilter.scaleFactor = 2
-        textFilter.text = attributedText
-        
-        // Create dark background for better visibility
-        let blackTextFilter = CIFilter.attributedTextImageGenerator()
-        let blackAttributedText = NSAttributedString(
-            string: String(format: "%.1f°C", temperature),
-            attributes: [.foregroundColor: NSColor.black]
-        )
-        blackTextFilter.scaleFactor = 2
-        blackTextFilter.text = blackAttributedText
-        
-        // Apply blur to the background
-        let blurFilter = CIFilter.gaussianBlur()
-        blurFilter.radius = 0.5
-        blurFilter.inputImage = blackTextFilter.outputImage
-        
-        // Composite text over background
-        guard var textImage = textFilter.outputImage?.composited(over: blurFilter.outputImage!).oriented(getTextOrientation(orientation)) else {
-            return nil
-        }
-        
-        // handle text appearing upside down
-        if orientation == .leftMirrored || orientation == .rightMirrored {
-            textImage = textImage.transformed(by: CGAffineTransform(scaleX: -1.0, y: 1.0))
-        }
-        
-        // Position the text
-        let width = self.extent.width
-        let height = self.extent.height
-        let textImageTranslated = textImage.transformed(
-            by: CGAffineTransform(
-                translationX: width * xPos - textImage.extent.width / 2,
-                y: (height * (1 - yPos) - textImage.extent.height / 2)
-            )
-        ).cropped(to: self.extent)
-        
-        // Composite text over main image
-        let compositeFilter = CIFilter.sourceOverCompositing()
-        compositeFilter.inputImage = textImageTranslated
-        compositeFilter.backgroundImage = self
-        return compositeFilter.outputImage
-    }
-    
     /// Creates a colorized thermal image from raw temperature data.
     ///
     /// This method performs the following steps:
@@ -134,7 +45,7 @@ extension CIImage {
         
         return scaleFilter.outputImage
     }
-        
+    
     /// Converts a CIImage to a CGImage with the specified orientation.
     ///
     /// - Parameters:
@@ -147,6 +58,142 @@ extension CIImage {
             orientedImage,
             from: CGRect(x: 0, y: 0, width: orientedImage.extent.width, height: orientedImage.extent.height)
         )
+    }
+}
+
+extension CGImage {
+    func mapCoords(x: CGFloat, y: CGFloat, orientation: CGImagePropertyOrientation) -> (CGFloat, CGFloat) {
+        switch orientation {
+        case .rightMirrored:
+            return (1 - y, x)
+        case .up:
+            return (x, 1 - y)
+        case .upMirrored:
+            return (1 - x, 1 - y)
+        case .down:
+            return (1 - x, y)
+        case .downMirrored:
+            return (x, y)
+        case .left:
+            return (y, x)
+        case .leftMirrored:
+            return (y, 1 - x)
+        case .right:
+            return (1 - y, 1 - x)
+        }
+    }
+    
+    func drawText(
+        text: NSAttributedString,
+        in context: CGContext,
+        x: CGFloat,
+        y: CGFloat,
+        orientation: CGImagePropertyOrientation
+    ) {
+        // Calculate text size
+        let textSize = text.size()
+        
+        let (oX, oY) = mapCoords(x: x, y: y, orientation: orientation)
+
+        // Calculate position in image coordinates
+        let xPos = oX * CGFloat(self.width) - textSize.width / 2
+        let yPos = oY * CGFloat(self.height) - textSize.height / 2
+        
+        
+        // Draw text with shadow for better visibility
+        context.saveGState()
+        context.setShadow(offset: CGSize(width: 0, height: 0), blur: 2, color: NSColor.black.cgColor)
+        let line = CTLineCreateWithAttributedString(text)
+        context.textPosition = CGPoint(x: xPos, y: yPos)
+        CTLineDraw(line, context)
+        context.restoreGState()
+    }
+    
+    func overlayTemperatures(
+        tempResults: TemperatureResult,
+        grid: TemperatureGrid,
+        orientation: CGImagePropertyOrientation
+    ) -> CGImage? {
+        // Create a bitmap context with the same dimensions as the input image
+        let width = self.width
+        let height = self.height
+        let bytesPerRow = width * 4
+        var bitmapData = [UInt8](repeating: 0, count: height * bytesPerRow)
+        
+        guard let context = CGContext(
+            data: &bitmapData,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            return self
+        }
+        
+        // Draw the original image
+        context.draw(self, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        // Configure text attributes
+        let fontSize: CGFloat = 12
+        let font = NSFont.systemFont(ofSize: fontSize)
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .center
+        
+        let whiteTextAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: NSColor.white
+        ]
+        let redTextAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: NSColor.red
+        ]
+
+        if grid.isVisible {
+            // Draw temperature values at grid points
+            for row in 0..<grid.temperatures.count {
+                for col in 0..<grid.temperatures[row].count {
+                    let temperature = grid.temperatures[row][col]
+                    let position = grid.positions[row][col]
+                    
+                    // Skip if temperature is invalid
+                    if temperature.isNaN || temperature < -50 {
+                        continue
+                    }
+                    
+                    // Format temperature string
+                    let text = grid.format.format(temperature)
+                    let attributedText = NSAttributedString(string: text, attributes: whiteTextAttributes)
+                    drawText(text: attributedText, in: context, x: position.x, y: position.y, orientation: orientation)
+                }
+            }
+        } else {
+            let centerText = grid.format.format(tempResults.center)
+            let attributedCenterText = NSAttributedString(string: centerText, attributes: whiteTextAttributes)
+            drawText(
+                text: attributedCenterText,
+                in: context,
+                x: 0.5,
+                y: 0.5,
+                orientation: orientation
+            )
+            let maxText = grid.format.format(tempResults.max)
+            let attributedMaxText = NSAttributedString(string: maxText, attributes: redTextAttributes)
+            drawText(
+                text: attributedMaxText,
+                in: context,
+                x: CGFloat(tempResults.maxX),
+                y: CGFloat(tempResults.maxY),
+                orientation: orientation
+            )
+        }
+        
+        // Create and return the new image
+        let result = context.makeImage()
+        return result
     }
 }
 

@@ -50,7 +50,35 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     /// The current orientation setting for the thermal image
     @Published var currentOrientation: OrientationOption {
         didSet {
-            UserDefaults.standard.set(orientationOptions.firstIndex(of: currentOrientation)!, forKey: "currentRotation")
+            UserDefaults.standard.set(orientationOptions.firstIndex(of: currentOrientation)!, forKey: "currentOrientation")
+            print("Orientation changed to \(currentOrientation)")
+        }
+    }
+    
+    /// Temperature grid for displaying temperature values in a grid pattern
+    @Published var temperatureGrid = TemperatureGrid()
+    
+    /// The current grid density setting
+    @Published var temperatureGridDensity: GridDensity {
+        didSet {
+            temperatureGrid.density = temperatureGridDensity
+            UserDefaults.standard.set(temperatureGridDensity.rawValue, forKey: "temperatureGridDensity")
+        }
+    }
+    
+    /// Whether to show the temperature grid overlay
+    @Published var showTemperatureGrid: Bool {
+        didSet {
+            temperatureGrid.isVisible = showTemperatureGrid
+            UserDefaults.standard.set(showTemperatureGrid, forKey: "showTemperatureGrid")
+        }
+    }
+    
+    /// The temperature format to use (Celsius or Fahrenheit)
+    @Published var temperatureFormat: TemperatureFormat {
+        didSet {
+            temperatureGrid.format = temperatureFormat
+            UserDefaults.standard.set(temperatureFormat.rawValue, forKey: "temperatureFormat")
         }
     }
     
@@ -68,7 +96,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     
     // Private components
     private let ciContext = CIContext()
-    private let temperatureProcessor = TemperatureProcessor(averagingEnabled: true, maxFrameCount: 2)
+    private let temperatureProcessor = TemperatureProcessor(averagingEnabled: false, maxFrameCount: 0)
     private let videoRecorder = VideoRecorder()
     private let imageCapturer = ImageCapturer()
     private var isProcessing = false
@@ -90,6 +118,26 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
             self.currentOrientation = orientationOptions[7]
             UserDefaults.standard.set(7, forKey: "currentOrientation")
         }
+        
+        // Initialize temperature grid settings
+        let gridDensityString = UserDefaults.standard.string(forKey: "temperatureGridDensity") ?? GridDensity.medium.rawValue
+        if let gridDensity = GridDensity.allCases.first(where: { $0.rawValue == gridDensityString }) {
+            self.temperatureGridDensity = gridDensity
+        } else {
+            self.temperatureGridDensity = .medium
+            UserDefaults.standard.set(GridDensity.medium.rawValue, forKey: "temperatureGridDensity")
+        }
+        
+        self.showTemperatureGrid = UserDefaults.standard.bool(forKey: "showTemperatureGrid")
+        
+        let temperatureFormatString = UserDefaults.standard.string(forKey: "temperatureFormat") ?? TemperatureFormat.celsius.rawValue
+        if let format = TemperatureFormat.allCases.first(where: { $0.rawValue == temperatureFormatString }) {
+            self.temperatureFormat = format
+        } else {
+            self.temperatureFormat = .celsius
+            UserDefaults.standard.set(TemperatureFormat.celsius.rawValue, forKey: "temperatureFormat")
+        }
+        
         super.init()
     }
     
@@ -209,19 +257,12 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
                 height: 192,
                 scale: SCALE,
                 colorMap: currentColorMap
-            )?.overlayTemperature(
-                temperature: tempResult.center,
-                xPos: 0.5,
-                yPos: 0.5,
-                orientation: currentOrientation.orientation
-            )?.overlayTemperature(
-                temperature: tempResult.max,
-                xPos: CGFloat(tempResult.maxX),
-                yPos: CGFloat(tempResult.maxY),
-                orientation: currentOrientation.orientation,
-                color: .red
             )?.toCGImage(
                 ciContext: ciContext,
+                orientation: currentOrientation.orientation
+            )?.overlayTemperatures(
+                tempResults: tempResult,
+                grid: temperatureGrid,
                 orientation: currentOrientation.orientation
             )
         else {
@@ -245,5 +286,19 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
             self.temperatureHistory = tempResult.temperatureHistory
             self.isProcessing = false
         }
+        
+        // Update temperature grid
+        updateTemperatureGrid(tempResult)
+    }
+    
+    /// Updates the temperature grid with new temperature data.
+    ///
+    /// - Parameter tempResult: The temperature result containing processed data.
+    private func updateTemperatureGrid(_ tempResult: TemperatureResult) {
+        temperatureGrid.updateGrid(
+            with: tempResult.temperatures,
+            width: tempResult.width,
+            height: tempResult.height
+        )
     }
 }

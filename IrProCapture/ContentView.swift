@@ -29,7 +29,10 @@ struct ContentView: View {
                     Spacer()
                 }
                 Spacer()
-                ColorMapDisplay(colorMap: model.currentColorMap, maxTemperature: model.maxTemperature, minTemperature: model.minTemperature)
+                VStack {
+                    ColorMapDisplay(colorMap: model.currentColorMap, maxTemperature: model.maxTemperature, minTemperature: model.minTemperature)
+                    TemperatureGridSettingsView()
+                }
                 TemperatureHistogramChart(
                     histogram: model.histogram,
                     minTemperature: model.minTemperature,
