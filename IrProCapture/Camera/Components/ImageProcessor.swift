@@ -112,7 +112,9 @@ extension CGImage {
     func overlayTemperatures(
         tempResults: TemperatureResult,
         grid: TemperatureGrid,
-        orientation: CGImagePropertyOrientation
+        orientation: CGImagePropertyOrientation,
+        format: TemperatureFormat,
+        showGrid: Bool
     ) -> CGImage? {
         // Create a bitmap context with the same dimensions as the input image
         let width = self.width
@@ -152,11 +154,11 @@ extension CGImage {
             .foregroundColor: NSColor.red
         ]
 
-        if grid.isVisible {
+        if showGrid {
             // Draw temperature values at grid points
             for row in 0..<grid.temperatures.count {
                 for col in 0..<grid.temperatures[row].count {
-                    let temperature = grid.temperatures[row][col]
+                    let temperature = format.convert(grid.temperatures[row][col])
                     let position = grid.positions[row][col]
                     
                     // Skip if temperature is invalid
@@ -165,13 +167,13 @@ extension CGImage {
                     }
                     
                     // Format temperature string
-                    let text = grid.format.format(temperature)
+                    let text = format.format(temperature)
                     let attributedText = NSAttributedString(string: text, attributes: whiteTextAttributes)
                     drawText(text: attributedText, in: context, x: position.x, y: position.y, orientation: orientation)
                 }
             }
         } else {
-            let centerText = grid.format.format(tempResults.center)
+            let centerText = format.format(format.convert(tempResults.center))
             let attributedCenterText = NSAttributedString(string: centerText, attributes: whiteTextAttributes)
             drawText(
                 text: attributedCenterText,
@@ -180,7 +182,7 @@ extension CGImage {
                 y: 0.5,
                 orientation: orientation
             )
-            let maxText = grid.format.format(tempResults.max)
+            let maxText = format.format(format.convert(tempResults.max))
             let attributedMaxText = NSAttributedString(string: maxText, attributes: redTextAttributes)
             drawText(
                 text: attributedMaxText,

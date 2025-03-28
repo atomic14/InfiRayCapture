@@ -12,9 +12,11 @@ struct TemperatureHistoryChart: View {
     private let history: [TemperatureHistoryPoint]
     private let minTemperature: Float
     private let maxTemperature: Float
+    private let format: TemperatureFormat
     
-    init(history: [TemperatureHistoryPoint], minTemperature: Float, maxTemperature: Float) {
+    init(history: [TemperatureHistoryPoint], minTemperature: Float, maxTemperature: Float, format: TemperatureFormat) {
         self.history = history
+        self.format = format
         self.minTemperature = minTemperature
         self.maxTemperature = maxTemperature
     }
@@ -23,35 +25,35 @@ struct TemperatureHistoryChart: View {
         Chart(history) {
             LineMark(
                 x: .value("Time", $0.timestamp),
-                y: .value("Max", $0.max),
+                y: .value("Max", format.convert($0.max)),
                 series: .value("", "Max")
             )
             .foregroundStyle(.red)
             .interpolationMethod(.catmullRom)
             LineMark(
                 x: .value("Time", $0.timestamp),
-                y: .value("Min", $0.min),
+                y: .value("Min", format.convert($0.min)),
                 series: .value("", "Min")
             )
             .foregroundStyle(.blue)
             .interpolationMethod(.catmullRom)
             LineMark(
                 x: .value("Time", $0.timestamp),
-                y: .value("Ave", $0.average),
+                y: .value("Ave", format.convert($0.average)),
                 series: .value("", "Ave")
             )
             .foregroundStyle(.green)
             .interpolationMethod(.catmullRom)
             LineMark(
                 x: .value("Time", $0.timestamp),
-                y: .value("Center", $0.center),
+                y: .value("Center", format.convert($0.center)),
                 series: .value("", "Center")
             )
             .foregroundStyle(.orange)
             .interpolationMethod(.catmullRom)
         }
         .chartForegroundStyleScale(["Max": Color.red, "Min": Color.blue, "Ave": Color.green, "Center": Color.orange])
-        .chartYScale(domain: minTemperature...maxTemperature)
+        .chartYScale(domain: format.convert(minTemperature)...format.convert(maxTemperature))
         .chartLegend(position: .trailing, alignment: .center)
         .frame(height: 150)
         .padding(.horizontal)
@@ -73,6 +75,7 @@ struct TemperatureHistoryChart: View {
     TemperatureHistoryChart(
         history: data,
         minTemperature: 18.0,
-        maxTemperature: 38.0
+        maxTemperature: 38.0,
+        format: .celsius
     )
-} 
+}

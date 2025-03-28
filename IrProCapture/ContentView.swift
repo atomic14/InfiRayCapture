@@ -11,7 +11,7 @@ import Foundation
 
 struct ContentView: View {
     @EnvironmentObject var model: Camera
-    @State var isRunning = false
+    @EnvironmentObject var uiState: UIState
     @State private var alertMessage: String? = nil
 
     var body: some View {
@@ -30,13 +30,17 @@ struct ContentView: View {
                 }
                 Spacer()
                 VStack {
-                    ColorMapDisplay(colorMap: model.currentColorMap, maxTemperature: model.maxTemperature, minTemperature: model.minTemperature)
-                    TemperatureGridSettingsView()
+                    ColorMapDisplay(
+                        colorMap: uiState.currentColorMap,
+                        maxTemperature: model.maxTemperature,
+                        minTemperature: model.minTemperature,
+                        format: uiState.temperatureFormat)
                 }
                 TemperatureHistogramChart(
                     histogram: model.histogram,
                     minTemperature: model.minTemperature,
-                    maxTemperature: model.maxTemperature
+                    maxTemperature: model.maxTemperature,
+                    format: uiState.temperatureFormat
                 )
             }.padding()
             
@@ -44,7 +48,8 @@ struct ContentView: View {
             TemperatureHistoryChart(
                 history: model.temperatureHistory,
                 minTemperature: model.temperatureHistory.isEmpty ? model.minTemperature : model.temperatureHistory.map { $0.min }.min() ?? model.minTemperature,
-                maxTemperature: model.temperatureHistory.isEmpty ? model.maxTemperature : model.temperatureHistory.map { $0.max }.max() ?? model.maxTemperature
+                maxTemperature: model.temperatureHistory.isEmpty ? model.maxTemperature : model.temperatureHistory.map { $0.max }.max() ?? model.maxTemperature,
+                format: uiState.temperatureFormat
             )
             .padding(.bottom)
         }
@@ -67,6 +72,8 @@ struct ContentView: View {
 }
 
 #Preview {
+    let uiState = UIState()
     ContentView()
-    .environmentObject(Camera())
+        .environmentObject(Camera(uiState: uiState))
+        .environmentObject(uiState)
 }

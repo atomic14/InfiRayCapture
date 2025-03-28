@@ -9,80 +9,49 @@ import SwiftUI
 
 @main
 struct IrProCaptureApp: App {
-    @StateObject var model = Camera()
+    @StateObject private var uiState: UIState
+    private let camera: Camera
+    
+    init() {
+        let uiState = UIState()
+        _uiState = StateObject(wrappedValue: uiState)
+        self.camera = Camera(uiState: uiState)
+    }
     
     var body: some Scene {
         Window("InfiRay Viewer", id: "main") {
-            ContentView().environmentObject(model)
+            ContentView()
+                .environmentObject(uiState)
+                .environmentObject(camera)
         }
         .commands {
-            CommandMenu("Color Map") {
-                ForEach(colorMaps, id: \.self) { colorMap in
-                    Button(action: {
-                        model.currentColorMap = colorMap
-                    }) {
-                        HStack {
-                            Text(colorMap.name)
-                            if model.currentColorMap == colorMap {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
-                            }
-                        }
+            CommandMenu("Display") {
+                Picker("Color Map", selection: $uiState.currentColorMap) {
+                    ForEach(colorMaps, id: \.self) { colorMap in
+                        Text(colorMap.name).tag(colorMap)
                     }
                 }
-            }
-            CommandMenu("Orientation") {
-                ForEach(orientationOptions, id: \.self) { colorMap in
-                    Button(action: {
-                        model.currentOrientation = colorMap
-                    }) {
-                        HStack {
-                            Text(colorMap.name)
-                            if model.currentOrientation == colorMap {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                    }
-                    .disabled(model.isRecording)
-                }
-            }
-            CommandMenu("Temperature Grid") {
-                Toggle("Show Grid", isOn: $model.showTemperatureGrid)
-                
-                Menu("Grid Density") {
-                    ForEach(GridDensity.allCases) { density in
-                        Button(action: {
-                            model.temperatureGridDensity = density
-                        }) {
-                            HStack {
-                                Text(density.rawValue)
-                                if model.temperatureGridDensity == density {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Menu("Temperature Format") {
+                Picker("Temperature Format", selection: $uiState.temperatureFormat) {
                     ForEach(TemperatureFormat.allCases) { format in
-                        Button(action: {
-                            model.temperatureFormat = format
-                        }) {
-                            HStack {
-                                Text(format.rawValue)
-                                if model.temperatureFormat == format {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
+                        Text(format.rawValue).tag(format)
                     }
                 }
+                Toggle("Show Grid", isOn: $uiState.showTemperatureGrid)
+                Picker("Grid Density", selection: $uiState.temperatureGridDensity) {
+                    ForEach(GridDensity.allCases) { density in
+                        Text(density.rawValue).tag(density)
+                    }
+                }
+                Picker("Orientation", selection: $uiState.currentOrientation) {
+                    ForEach(orientationOptions, id: \.self) { orientation in
+                        Text(orientation.name).tag(orientation)
+                    }
+                }
+                .disabled(uiState.isRecording)
             }
+            
             CommandMenu("Capture") {
+                
                 Button(action: {
                     let panel = NSSavePanel()
                     panel.nameFieldLabel = "Save image as:"
@@ -90,7 +59,7 @@ struct IrProCaptureApp: App {
                     panel.canCreateDirectories = true
                     panel.begin { response in
                         if response == NSApplication.ModalResponse.OK, let fileUrl = panel.url {
-                            if !model.saveImage(outputURL: fileUrl) {
+                            if !camera.saveImage(outputURL: fileUrl) {
                                 let alert = NSAlert()
                                 alert.alertStyle = .critical
                                 alert.messageText = "Failed to save image"
@@ -100,7 +69,8 @@ struct IrProCaptureApp: App {
                     }
                 }, label: {
                     Text("Save Image")
-                }).disabled(!model.isRunning)
+                }).disabled(!uiState.isRunning)
+                
                 Button(action: {
                     let panel = NSSavePanel()
                     panel.nameFieldLabel = "Save video as:"
@@ -108,7 +78,7 @@ struct IrProCaptureApp: App {
                     panel.canCreateDirectories = true
                     panel.begin { response in
                         if response == NSApplication.ModalResponse.OK, let fileUrl = panel.url {
-                            if !model.startRecording(outputURL: fileUrl) {
+                            if !camera.startRecording(outputURL: fileUrl) {
                                 let alert = NSAlert()
                                 alert.alertStyle = .critical
                                 alert.messageText = "Failed to start recording"
@@ -118,12 +88,12 @@ struct IrProCaptureApp: App {
                     }
                 }, label: {
                     Text("Record")
-                }).disabled(model.isRecording || !model.isRunning)
+                }).disabled(uiState.isRecording || !uiState.isRunning)
                 Button(action: {
-                    model.stopRecording()
+                    camera.stopRecording()
                 }, label: {
                     Text("Stop Recording")
-                }).disabled(!model.isRecording)
+                }).disabled(!uiState.isRecording)
             }
         }
     }

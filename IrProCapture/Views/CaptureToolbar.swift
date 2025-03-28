@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CaptureToolbar: View {
     @EnvironmentObject var model: Camera
+    @EnvironmentObject var uiState: UIState
     @State private var alertMessage: String? = nil
 
     var body: some View {
@@ -26,7 +27,7 @@ struct CaptureToolbar: View {
                 Image(systemName: "play.square")
                     .font(.title)
             }
-            .disabled(model.isRunning)
+            .disabled(uiState.isRunning)
             .buttonStyle(.bordered)
             .help("Start Camera")
 
@@ -38,29 +39,29 @@ struct CaptureToolbar: View {
                 Image(systemName: "camera")
                     .font(.title)
             }
-            .disabled(!model.isRunning)
+            .disabled(!uiState.isRunning)
             .buttonStyle(.bordered)
             .help("Capture Image")
             
             // Record video button
             Button(action: {
-                if model.isRecording {
+                if uiState.isRecording {
                     model.stopRecording()
                 } else {
                     startRecording()
                 }
             }) {
-                if (model.isRecording) {
+                if (uiState.isRecording) {
                     Image(systemName: "record.circle")
-                        .foregroundColor(model.isRecording ? .red : .primary)
+                        .foregroundColor(uiState.isRecording ? .red : .primary)
                 } else {
                     Image(systemName: "stop.circle")
                         .font(.title)
                 }
             }
-            .disabled(!model.isRunning)
+            .disabled(!uiState.isRunning)
             .buttonStyle(.bordered)
-            .help(model.isRecording ? "Stop Recording" : "Start Recording")
+            .help(uiState.isRecording ? "Stop Recording" : "Start Recording")
             
             // Rotate left button
             Button(action: {
@@ -69,7 +70,7 @@ struct CaptureToolbar: View {
                 Image(systemName: "rotate.left")
                     .font(.title)
             }
-            .disabled(!model.isRunning)
+            .disabled(!uiState.isRunning)
             .buttonStyle(.bordered)
             .help("Previous Orientation")
             // Rotate right button
@@ -79,7 +80,7 @@ struct CaptureToolbar: View {
                 Image(systemName: "rotate.right")
                     .font(.title)
             }
-            .disabled(!model.isRunning)
+            .disabled(!uiState.isRunning)
             .buttonStyle(.bordered)
             .help("Next Orientation")
             
@@ -100,13 +101,13 @@ struct CaptureToolbar: View {
     /// Rotates to the next orientation option in the list
     private func rotateToNextOrientation() {
         // Call the Camera model's method to cycle to the next orientation
-        model.nextOrientation()
+        uiState.nextOrientation()
     }
     
     /// Rotates to the previous orientation option in the list
     private func rotateToPreviousOrientation() {
         // Call the Camera model's method to cycle to the previous orientation
-        model.previousOrientation()
+        uiState.previousOrientation()
     }
     
     /// Handles image capture using a save dialog
@@ -143,6 +144,8 @@ struct CaptureToolbar: View {
 
 // Commenting out the preview for now due to dependency issues
 #Preview {
+    let uiState = UIState()
     CaptureToolbar()
-    .environmentObject(Camera())
-} 
+        .environmentObject(Camera(uiState: uiState))
+        .environmentObject(uiState)
+}

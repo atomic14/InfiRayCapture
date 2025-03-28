@@ -23,7 +23,7 @@ import CoreGraphics
 /// This class implements the `ObservableObject` protocol for SwiftUI integration and
 /// `CaptureDelegate` for handling camera capture events.
 class Camera: NSObject, ObservableObject, CaptureDelegate {
-    // MARK: - Published Properties
+    private let uiState: UIState
     
     /// The processed thermal image ready for display
     @Published var resultImage: CGImage? = nil
@@ -39,55 +39,10 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     
     /// The average temperature across the entire frame
     @Published var averageTemperature: Float = 0
-    
-    /// The currently selected color map for thermal visualization
-    @Published var currentColorMap: ColorMap {
-        didSet {
-            UserDefaults.standard.set(colorMaps.firstIndex(of: currentColorMap)!, forKey: "currentColorMap")
-        }
-    }
-    
-    /// The current orientation setting for the thermal image
-    @Published var currentOrientation: OrientationOption {
-        didSet {
-            UserDefaults.standard.set(orientationOptions.firstIndex(of: currentOrientation)!, forKey: "currentOrientation")
-            print("Orientation changed to \(currentOrientation)")
-        }
-    }
-    
+        
     /// Temperature grid for displaying temperature values in a grid pattern
     @Published var temperatureGrid = TemperatureGrid()
-    
-    /// The current grid density setting
-    @Published var temperatureGridDensity: GridDensity {
-        didSet {
-            temperatureGrid.density = temperatureGridDensity
-            UserDefaults.standard.set(temperatureGridDensity.rawValue, forKey: "temperatureGridDensity")
-        }
-    }
-    
-    /// Whether to show the temperature grid overlay
-    @Published var showTemperatureGrid: Bool {
-        didSet {
-            temperatureGrid.isVisible = showTemperatureGrid
-            UserDefaults.standard.set(showTemperatureGrid, forKey: "showTemperatureGrid")
-        }
-    }
-    
-    /// The temperature format to use (Celsius or Fahrenheit)
-    @Published var temperatureFormat: TemperatureFormat {
-        didSet {
-            temperatureGrid.format = temperatureFormat
-            UserDefaults.standard.set(temperatureFormat.rawValue, forKey: "temperatureFormat")
-        }
-    }
-    
-    /// Indicates whether the camera is currently running
-    @Published var isRunning = false
-    
-    /// Indicates whether video recording is in progress
-    @Published var isRecording = false
-    
+
     /// Temperature distribution data for histogram visualization
     @Published var histogram: [HistogramPoint] = []
     
@@ -101,64 +56,10 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     private let imageCapturer = ImageCapturer()
     private var isProcessing = false
     private var capture: Capture?
-    
-    override init() {
-        // Initialise any user defaults
-        let colorMapIndex = UserDefaults.standard.integer(forKey: "currentColorMap")
-        if colorMapIndex >= 0 && colorMapIndex < colorMaps.count {
-            self.currentColorMap = colorMaps[colorMapIndex]
-        } else {
-            self.currentColorMap = colorMaps[0]
-            UserDefaults.standard.set(0, forKey: "currentColorMap")
-        }
-        let currentOrientationIndex = UserDefaults.standard.integer(forKey: "currentOrientation")
-        if currentOrientationIndex >= 0 || currentOrientationIndex < orientationOptions.count {
-            self.currentOrientation = orientationOptions[UserDefaults.standard.integer(forKey: "currentOrientation")]
-        } else {
-            self.currentOrientation = orientationOptions[7]
-            UserDefaults.standard.set(7, forKey: "currentOrientation")
-        }
         
-        // Initialize temperature grid settings
-        let gridDensityString = UserDefaults.standard.string(forKey: "temperatureGridDensity") ?? GridDensity.medium.rawValue
-        if let gridDensity = GridDensity.allCases.first(where: { $0.rawValue == gridDensityString }) {
-            self.temperatureGridDensity = gridDensity
-        } else {
-            self.temperatureGridDensity = .medium
-            UserDefaults.standard.set(GridDensity.medium.rawValue, forKey: "temperatureGridDensity")
-        }
-        
-        self.showTemperatureGrid = UserDefaults.standard.bool(forKey: "showTemperatureGrid")
-        
-        let temperatureFormatString = UserDefaults.standard.string(forKey: "temperatureFormat") ?? TemperatureFormat.celsius.rawValue
-        if let format = TemperatureFormat.allCases.first(where: { $0.rawValue == temperatureFormatString }) {
-            self.temperatureFormat = format
-        } else {
-            self.temperatureFormat = .celsius
-            UserDefaults.standard.set(TemperatureFormat.celsius.rawValue, forKey: "temperatureFormat")
-        }
-        
-        super.init()
-    }
-    
-    /// Cycles to the next orientation option
-    func nextOrientation() {
-        guard !isRecording else { return }
-        
-        if let currentIndex = orientationOptions.firstIndex(of: currentOrientation) {
-            let nextIndex = (currentIndex + 1) % orientationOptions.count
-            currentOrientation = orientationOptions[nextIndex]
-        }
-    }
-    
-    /// Cycles to the previous orientation option
-    func previousOrientation() {
-        guard !isRecording else { return }
-        
-        if let currentIndex = orientationOptions.firstIndex(of: currentOrientation) {
-            let previousIndex = (currentIndex - 1 + orientationOptions.count) % orientationOptions.count
-            currentOrientation = orientationOptions[previousIndex]
-        }
+    init(uiState: UIState)
+    {
+        self.uiState = uiState
     }
     
     /// Starts the thermal camera capture session.
@@ -166,18 +67,20 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     /// - Returns: A boolean indicating whether the camera started successfully.
     /// - Throws: Camera initialization or permission errors.
     func start() throws -> Bool {
-        if isRunning {
+        if uiState.isRunning {
             return true
         }
         capture = Capture(delegate: self)
-        isRunning = try capture?.start() ?? false
-        return isRunning
+        uiState.isRunning = try capture?.start() ?? false
+        return uiState.isRunning
     }
     
     /// Stops the thermal camera capture session.
     func stop() {
-        capture?.stop()
-        isRunning = false
+        if uiState.isRunning {
+            capture?.stop()
+            uiState.isRunning = false
+        }
     }
     
     /// Saves the current thermal image to disk as a PNG file.
@@ -198,16 +101,18 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
     /// - Parameter outputURL: The URL where the video should be saved.
     /// - Returns: A boolean indicating whether recording started successfully.
     func startRecording(outputURL: URL) -> Bool {
-        let (width, height) = currentOrientation.translateX(CGFloat(WIDTH), y: CGFloat(HEIGHT))
-        isRecording = videoRecorder.startRecording(outputURL: outputURL, width: width, height: height)
-        return isRecording
+        let (width, height) = uiState.currentOrientation.translateX(CGFloat(WIDTH), y: CGFloat(HEIGHT))
+        uiState.isRecording = videoRecorder.startRecording(outputURL: outputURL, width: width, height: height)
+        return uiState.isRecording
     }
     
     /// Stops the current video recording session.
     func stopRecording() {
-        isRecording = false
-        videoRecorder.stopRecording {
-            print("Recording finished")
+        if uiState.isRecording {
+            uiState.isRecording = false
+            videoRecorder.stopRecording {
+                print("Recording finished")
+            }
         }
     }
     
@@ -256,14 +161,16 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
                 width: 256,
                 height: 192,
                 scale: SCALE,
-                colorMap: currentColorMap
+                colorMap: uiState.currentColorMap
             )?.toCGImage(
                 ciContext: ciContext,
-                orientation: currentOrientation.orientation
+                orientation: uiState.currentOrientation.orientation
             )?.overlayTemperatures(
                 tempResults: tempResult,
                 grid: temperatureGrid,
-                orientation: currentOrientation.orientation
+                orientation: uiState.currentOrientation.orientation,
+                format: uiState.temperatureFormat,
+                showGrid: uiState.showTemperatureGrid
             )
         else {
             isProcessing = false
@@ -271,7 +178,7 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
         }
 
         // Handle video recording
-        if isRecording {
+        if uiState.isRecording {
             _ = videoRecorder.recordFrame(processedImage)
         }
         
@@ -298,7 +205,8 @@ class Camera: NSObject, ObservableObject, CaptureDelegate {
         temperatureGrid.updateGrid(
             with: tempResult.temperatures,
             width: tempResult.width,
-            height: tempResult.height
+            height: tempResult.height,
+            density: uiState.temperatureGridDensity
         )
     }
 }
