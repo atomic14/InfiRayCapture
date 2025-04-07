@@ -157,7 +157,7 @@ class VideoRecorder {
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ) else {
-            print("Could not create CGContext")
+            print("Could not create CGContext \(image.width)x\(image.height)")
             CVPixelBufferUnlockBaseAddress(pixelBuffer, CVPixelBufferLockFlags(rawValue: 0))
             return false
         }

@@ -39,11 +39,13 @@ extension CIImage {
         colorMap.filter.inputImage = greyScale
         
         // Scale the image
-        let scaleFilter = CIFilter.lanczosScaleTransform()
+        let scaleFilter = CIFilter.bicubicScaleTransform()
         scaleFilter.scale = scale
+        scaleFilter.parameterB = 0.0
+        scaleFilter.parameterC = 0.75
         scaleFilter.inputImage = colorMap.filter.outputImage
         
-        return scaleFilter.outputImage
+        return scaleFilter.outputImage?.cropped(to: CGRect(x: 0, y: 0, width: Int(Float(width) * scale), height: Int(Float(height) * scale)))
     }
     
     /// Converts a CIImage to a CGImage with the specified orientation.

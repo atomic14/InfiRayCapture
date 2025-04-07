@@ -52,10 +52,11 @@ struct CaptureToolbar: View {
                 }
             }) {
                 if (uiState.isRecording) {
-                    Image(systemName: "record.circle")
-                        .foregroundColor(uiState.isRecording ? .red : .primary)
-                } else {
                     Image(systemName: "stop.circle")
+                        .foregroundColor(uiState.isRecording ? .red : .primary)
+                        .font(.title)
+                } else {
+                    Image(systemName: "record.circle")
                         .font(.title)
                 }
             }

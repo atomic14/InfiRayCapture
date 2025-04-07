@@ -18,32 +18,42 @@ struct ContentView: View {
         VStack {
             CaptureToolbar()
                 .padding(.top)
+            Divider()
             HStack {
                 if let image = model.resultImage {
                     // the image
                     Image(image, scale: 1.0, label: Text("Temperature"))
+                        .antialiased(true)
+                        .interpolation(.high)
                         .resizable()        // Make the image resizable
                         .scaledToFit()      // Scale it to fit the container, maintaining aspect ratio
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     Spacer()
+                    Image(systemName: "photo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: .infinity)
+                        .padding()
+                        .background(.black)
+                        .foregroundColor(.white)
+                        .opacity(0.2)
+                    Spacer()
                 }
-                Spacer()
-                VStack {
-                    ColorMapDisplay(
-                        colorMap: uiState.currentColorMap,
-                        maxTemperature: model.maxTemperature,
-                        minTemperature: model.minTemperature,
-                        format: uiState.temperatureFormat)
-                }
+                Divider()
+                ColorMapDisplay(
+                    colorMap: uiState.currentColorMap,
+                    maxTemperature: model.maxTemperature,
+                    minTemperature: model.minTemperature,
+                    format: uiState.temperatureFormat)
                 TemperatureHistogramChart(
                     histogram: model.histogram,
                     minTemperature: model.minTemperature,
                     maxTemperature: model.maxTemperature,
                     format: uiState.temperatureFormat
                 )
-            }.padding()
-            
+            }
+            Divider()
             // History chart at the bottom
             TemperatureHistoryChart(
                 history: model.temperatureHistory,
