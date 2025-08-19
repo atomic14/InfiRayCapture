@@ -53,6 +53,12 @@ class Capture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         // Find our USB Camera device
         let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: [.external], mediaType: .video, position: .unspecified)
         let devices = discoverySession.devices
+        // print all the devices to debug log
+        print("Found the following cameras:")
+        for device in devices {
+            print("\t\(device.modelID)")
+        }
+        
         guard let videoCaptureDevice = devices.filter({ $0.modelID == "UVC Camera VendorID_3034 ProductID_22576" }).first else {
             throw IrProError.noDevicesFound
         }
