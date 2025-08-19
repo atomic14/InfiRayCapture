@@ -4,6 +4,8 @@
 
 A macOS application for viewing and capturing thermal imagery from the InfiRay P2Pro USB thermal camera.
 
+Please not - this is only confirmed working with the USB-C version. We're investigating if it can work with the lightning version [here](https://github.com/atomic14/InfiRayCapture/issues/1).
+
 If you find this project useful, please consider [buying me a coffee](https://ko-fi.com/atomic14) or become a supporter on [Patreon](https://www.patreon.com/atomic14).
 
 Alternatively, you can stop by my [YouTube channel](https://www.youtube.com/@atomic14) and watch a few videos.
