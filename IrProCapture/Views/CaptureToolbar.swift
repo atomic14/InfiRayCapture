@@ -18,10 +18,12 @@ struct CaptureToolbar: View {
 
             // Capture image button
             Button(action: {
-                guard let success = try? model.start(),
-                      success else {
-                    alertMessage = "Failed to start camera."
-                    return
+                do {
+                    if !(try model.start()) {
+                        alertMessage = "Failed to start camera."
+                    }
+                } catch let error {
+                    alertMessage = error.localizedDescription
                 }
             }) {
                 Image(systemName: "play.square")
@@ -87,15 +89,18 @@ struct CaptureToolbar: View {
             
             Spacer()
         }
-        .alert(isPresented: Binding<Bool>(
-            get: { alertMessage != nil },
-            set: { _ in alertMessage = nil }
-        )) {
-            Alert(
-                title: Text("Error"),
-                message: Text(alertMessage ?? ""),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { alertMessage != nil },
+                set: { if !$0 { alertMessage = nil } }
+            ),
+            presenting: alertMessage
+        ) { _ in
+            // actions
+            Button("OK", role: .cancel) { }
+        } message: { msg in
+            Text(msg)
         }
     }
     

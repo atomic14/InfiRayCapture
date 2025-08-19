@@ -6,7 +6,7 @@ import Foundation
 /// - Initializing the IR camera
 /// - Setting up capture sessions
 /// - Configuring video input/output
-enum IrProError: String, Error {
+enum IrProError: String, Error, LocalizedError {
     /// No IR camera devices were detected on the system
     case noDevicesFound = "No IR camera devices found."
     /// Failed to create an AVCaptureDeviceInput for the IR camera
@@ -15,4 +15,6 @@ enum IrProError: String, Error {
     case failedToAddToSession = "Could not add to capture session."
     /// Failed to configure the video output for the capture session
     case failedToAddOutput = "Failed to set video output."
-} 
+    
+    var errorDescription: String? { rawValue }
+}
