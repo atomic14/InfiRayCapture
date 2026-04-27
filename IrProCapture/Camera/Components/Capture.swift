@@ -59,7 +59,11 @@ class Capture: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
             print("\t\(device.modelID)")
         }
         
-        guard let videoCaptureDevice = devices.filter({ $0.modelID == "UVC Camera VendorID_3034 ProductID_22576" }).first else {
+        let knownModelIDs: Set<String> = [
+            "UVC Camera VendorID_3034 ProductID_22576",  // 0x5830 – P2 Pro
+            "UVC Camera VendorID_3034 ProductID_22592",  // 0x5840 – ToolTop T7
+        ]
+        guard let videoCaptureDevice = devices.filter({ knownModelIDs.contains($0.modelID) }).first else {
             throw IrProError.noDevicesFound
         }
                 
